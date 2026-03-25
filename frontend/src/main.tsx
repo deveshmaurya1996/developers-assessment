@@ -5,6 +5,7 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query"
 import { createRouter, RouterProvider } from "@tanstack/react-router"
+import axios from "axios"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
 import { ApiError, OpenAPI } from "./client"
@@ -13,7 +14,9 @@ import { Toaster } from "./components/ui/sonner"
 import "./index.css"
 import { routeTree } from "./routeTree.gen"
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL
+const apiBase = import.meta.env.VITE_API_URL
+OpenAPI.BASE = apiBase
+axios.defaults.timeout = 25_000
 OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || ""
 }

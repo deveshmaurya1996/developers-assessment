@@ -98,7 +98,7 @@ That will be used by the Docker Compose files to configure the base domain for t
 
 Traefik will use this to transmit traffic at `api.localhost.tiangolo.com` to the backend, and traffic at `dashboard.localhost.tiangolo.com` to the frontend.
 
-The domain `localhost.tiangolo.com` is a special domain that is configured (with all its subdomains) to point to `127.0.0.1`. This way you can use that for your local development.
+The domain `localhost.tiangolo.com` is a special domain that is configured (with all its subdomains) to point to `localhost` on your machine. This way you can use that for your local development.
 
 After you update it, run again:
 

@@ -2,9 +2,13 @@ from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.core.config import settings
+from app.core.seed_payment_demo import seed_payment_demo
 from app.models import User, UserCreate
 
-engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+engine = create_engine(
+    str(settings.SQLALCHEMY_DATABASE_URI),
+    connect_args={"connect_timeout": 5},
+)
 
 
 # make sure all SQLModel models are imported (app.models) before initializing DB
@@ -31,3 +35,4 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+    seed_payment_demo(session)

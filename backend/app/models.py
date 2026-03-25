@@ -1,6 +1,9 @@
 import uuid
+from datetime import date, datetime, timezone
+from decimal import Decimal
 
 from pydantic import EmailStr
+from sqlalchemy import Column, Numeric
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -111,3 +114,125 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class Task(SQLModel, table=True):
+    __tablename__ = "task"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    title: str = Field(max_length=255, index=True)
+    description: str | None = Field(default=None, max_length=2000)
+    hourly_rate: Decimal = Field(
+        sa_column=Column(Numeric(12, 2), nullable=False),
+        default=Decimal("0.00"),
+    )
+    worklogs: list["WorkLog"] = Relationship(back_populates="task")
+
+
+class WorkLog(SQLModel, table=True):
+    __tablename__ = "worklog"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    task_id: uuid.UUID = Field(foreign_key="task.id", ondelete="CASCADE", index=True)
+    freelancer_id: uuid.UUID = Field(
+        foreign_key="user.id", ondelete="CASCADE", index=True
+    )
+    status: str = Field(default="pending", max_length=32, index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    task: Task | None = Relationship(back_populates="worklogs")
+    freelancer: User | None = Relationship()
+    entries: list["TimeEntry"] = Relationship(
+        back_populates="worklog", cascade_delete=True
+    )
+
+
+class TimeEntry(SQLModel, table=True):
+    __tablename__ = "time_entry"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    worklog_id: uuid.UUID = Field(
+        foreign_key="worklog.id", ondelete="CASCADE", index=True
+    )
+    worked_at: datetime = Field(index=True)
+    hours: Decimal = Field(sa_column=Column(Numeric(10, 2), nullable=False))
+    notes: str | None = Field(default=None, max_length=2000)
+    worklog: WorkLog | None = Relationship(back_populates="entries")
+
+
+class PaymentBatch(SQLModel, table=True):
+    __tablename__ = "payment_batch"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    date_from: date
+    date_to: date
+    total_amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
+    worklog_count: int = Field(default=0)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True
+    )
+    created_by_id: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", ondelete="SET NULL"
+    )
+
+
+class PaymentBatchWorklog(SQLModel, table=True):
+    __tablename__ = "payment_batch_worklog"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    batch_id: uuid.UUID = Field(
+        foreign_key="payment_batch.id", ondelete="CASCADE", index=True
+    )
+    worklog_id: uuid.UUID = Field(foreign_key="worklog.id", ondelete="CASCADE")
+    amount: Decimal = Field(sa_column=Column(Numeric(14, 2), nullable=False))
+
+
+class TimeEntryPublic(SQLModel):
+    id: uuid.UUID
+    worklog_id: uuid.UUID
+    worked_at: datetime
+    hours: float
+    notes: str | None
+
+
+class WorklogSummaryPublic(SQLModel):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    task_title: str
+    freelancer_id: uuid.UUID
+    freelancer_email: str
+    period_hours: float
+    period_earned: float
+    status: str
+    time_entry_count: int
+
+
+class WorklogsPublic(SQLModel):
+    data: list[WorklogSummaryPublic]
+    count: int
+
+
+class WorklogDetailPublic(SQLModel):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    task_title: str
+    freelancer_id: uuid.UUID
+    freelancer_email: str
+    status: str
+    created_at: datetime
+    period_hours: float
+    period_earned: float
+    entries: list[TimeEntryPublic]
+
+
+class PaymentPreviewPublic(SQLModel):
+    data: list[WorklogSummaryPublic]
+    count: int
+    total_amount: float
+
+
+class PaymentBatchCreatedPublic(SQLModel):
+    batch_id: uuid.UUID
+    total_amount: float
+    worklog_count: int

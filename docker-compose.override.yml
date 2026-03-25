@@ -1,5 +1,4 @@
 services:
-
   # Local services are available on their ports, but also available on:
   # http://api.localhost.tiangolo.com: backend
   # http://dashboard.localhost.tiangolo.com: frontend
@@ -87,8 +86,6 @@ services:
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
 
-
-
   frontend:
     restart: "no"
     ports:
@@ -98,8 +95,6 @@ services:
       args:
         - VITE_API_URL=http://localhost:8000
         - NODE_ENV=development
-
-  
 
 networks:
   traefik-public:
